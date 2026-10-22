@@ -1,0 +1,55 @@
+name: Build ChatNexus Push Library
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl, mbstring, openssl
+          tools: composer
+
+      - name: Create Composer configuration
+        run: |
+          cat > composer.json <<'EOF'
+          {
+            "name": "chatnexus/push-notifications",
+            "description": "PHP Web Push library for ChatNexus",
+            "type": "project",
+            "require": {
+              "php": "^8.2",
+              "minishlink/web-push": "^9.0"
+            },
+            "config": {
+              "sort-packages": true
+            }
+          }
+          EOF
+
+      - name: Install PHP Web Push library
+        run: composer install --no-dev --prefer-dist --no-interaction
+
+      - name: Package library
+        run: zip -r chatnexus-push-library.zip vendor composer.json composer.lock
+
+      - name: Save downloadable package
+        uses: actions/upload-artifact@v4
+        with:
+          name: chatnexus-push-library
+          path: chatnexus-push-library.zip
+          retention-days: 7
